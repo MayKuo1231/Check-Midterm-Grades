@@ -71,7 +71,8 @@ if st.button("查詢", type="primary"):
                 latest_exam = chart_rank.iloc[-1]["考試名稱"]
                 latest_rank = int(chart_rank.iloc[-1]["校排"])
                 
-                st.markdown(f"<h3 style='font-size: 22px;'>🏆 最新校排 ({latest_exam})：第 {latest_rank} 名</h3>", unsafe_allow_html=True)
+                # 💡 修改1：將「最新校排」的字體大小從 22px 改為 20px，避免在手機版折行
+                st.markdown(f"<h3 style='font-size: 20px;'>🏆 最新校排 ({latest_exam})：第 {latest_rank} 名</h3>", unsafe_allow_html=True)
                 st.markdown("<h3 style='font-size: 20px;'>📈 歷次校排趨勢圖</h3>", unsafe_allow_html=True)
                 
                 line_chart_rank = alt.Chart(chart_rank).mark_line(point=True).encode(
@@ -83,7 +84,7 @@ if st.button("查詢", type="primary"):
                 
                 st.divider()
 
-                # 【圖表二：最新一次考試能力分布 (雷達圖) - 移至此處】
+                # 【圖表二：最新一次考試能力分布 (雷達圖)】
                 st.markdown(f"<h3 style='font-size: 20px;'>🎯 最新能力分佈 ({latest_exam})</h3>", unsafe_allow_html=True)
                 
                 latest_scores = all_scores_df[all_scores_df["考試名稱"] == latest_exam]
@@ -107,7 +108,7 @@ if st.button("查詢", type="primary"):
 
                 st.divider()
 
-                # 【圖表三：歷次各科成績 (純數據表格) - 移至底部並更名】
+                # 【圖表三：歷次各科成績 (純數據表格)】
                 if not all_scores_df.empty:
                     st.markdown("<h3 style='font-size: 20px;'>📋 歷次各科成績</h3>", unsafe_allow_html=True)
                     
@@ -115,20 +116,41 @@ if st.button("查詢", type="primary"):
                     score_table = all_scores_df.pivot_table(index="考試名稱", columns="科目", values="分數", aggfunc="first")
                     # 固定科目的顯示順序
                     score_table = score_table.reindex(columns=subjects)
-                    # 固定考試名稱的顯示順序 (依照原本 Excel 欄位的順序)
+                    # 固定考試名稱的顯示順序
                     valid_exams = [exam for exam in score_cols if exam in score_table.index]
                     score_table = score_table.reindex(index=valid_exams)
                     
-                    # 整理表格外觀，隱藏索引讓畫面更整潔
                     score_table = score_table.reset_index()
                     score_table.columns.name = None
                     
-                    st.dataframe(score_table, hide_index=True, use_container_width=True)
+                    # 💡 修改2：注入自訂 CSS，並將 DataFrame 轉為 HTML 表格，確保手機版自動壓縮欄寬、文字置中，且不被切到
+                    st.markdown("""
+                    <style>
+                    .custom-score-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 10px 0;
+                        font-size: 15px;
+                    }
+                    .custom-score-table th, .custom-score-table td {
+                        text-align: center !important;
+                        padding: 8px 4px;
+                        border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+                    }
+                    .custom-score-table th {
+                        font-weight: 600;
+                    }
+                    </style>
+                    """, unsafe_allow_html=True)
+                    
+                    # 生成 HTML 並關閉 Pandas 預設的 index 列
+                    html_table = score_table.to_html(index=False, classes="custom-score-table", escape=False)
+                    st.markdown(html_table, unsafe_allow_html=True)
 
             else:
                 st.info("目前還沒有任何考試成績紀錄喔！")
 
         else:
             st.error("座號或密碼錯誤，請確認後重新輸入！")
-    else:
-        st.warning("請完整輸入座號與密碼！")
+else:
+    st.warning("請完整輸入座號與密碼！")
